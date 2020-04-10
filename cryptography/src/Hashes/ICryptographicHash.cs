@@ -4,7 +4,9 @@ namespace NCrypto.Cryptography.Hashes
 {
     public interface ICryptographicHash
     {
-        int Size { get; }
+        int SizeInBytes { get; }
+
+        int SizeInBits => SizeInBytes * 8;
 
         bool Compute(ReadOnlySpan<byte> data, Span<byte> result);
     }

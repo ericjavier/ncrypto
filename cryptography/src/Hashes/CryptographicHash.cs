@@ -11,7 +11,7 @@ namespace NCrypto.Cryptography.Hashes
                 throw new ArgumentException("Offset and count combination is out of the valid range for array.", nameof(dataOffset));
             }
 
-            if (resultOffset + hash.Size > result.Length)
+            if (resultOffset + hash.SizeInBytes > result.Length)
             {
                 throw new ArgumentException("Array to small for current hash size.", nameof(result));
             }
@@ -21,7 +21,7 @@ namespace NCrypto.Cryptography.Hashes
 
         public static byte[] Compute(this ICryptographicHash hash, byte[] data, int dataOffset, int dataCount)
         {
-            var result = new byte[hash.Size];
+            var result = new byte[hash.SizeInBytes];
             if (hash.Compute(data, dataOffset, dataCount, result, 0))
             {
                 return result;

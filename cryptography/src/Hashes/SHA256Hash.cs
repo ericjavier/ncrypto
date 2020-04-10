@@ -7,11 +7,11 @@ namespace NCrypto.Cryptography.Hashes
     {
         private readonly SHA256 sha256 = SHA256.Create();
 
-        public int Size => 32;
+        public int SizeInBytes => 32;
 
         public bool Compute(ReadOnlySpan<byte> data, Span<byte> result)
         {
-            return sha256.TryComputeHash(data, result, out int bytesWritten) && bytesWritten == Size;
+            return sha256.TryComputeHash(data, result, out int bytesWritten) && bytesWritten == SizeInBytes;
         }
     }
 }

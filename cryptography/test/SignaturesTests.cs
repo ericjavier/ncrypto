@@ -40,6 +40,8 @@ namespace Cryptography.Test
             var schemes = new List<ISignatureScheme>
             {
                 new LamportOneTimeSignature(new SHA256Hash()),
+                new LamportOneTimeSignature(new MD5Hash()),
+                new LamportOneTimeSignature(new SHA1Hash())
             };
 
             var data = Enumerable.Range(0, 10).Select(i => RandomHelper.GenerateBytes(1024)).ToList();
