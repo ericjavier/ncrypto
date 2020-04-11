@@ -4,30 +4,36 @@ using System;
 
 namespace NCrypto.Cryptography.Signatures
 {
-    public sealed class LamportOneTimeSignature : ISignatureScheme
+    public sealed class LamportNTimesSignature : ISignatureScheme
     {
         private readonly ICryptographicHash hash;
+        private readonly byte n;
         private readonly int subKeySizeInBytes; 
         private readonly int keySizeInBytes;
+        private readonly int composedKeySizeInBytes;
         private readonly int hashSizeInBits;
         private readonly int hashSizeInBytes;
 
-        public LamportOneTimeSignature(ICryptographicHash hash)
+        private byte k;
+
+        public LamportNTimesSignature(ICryptographicHash hash, byte n)
         {
             this.hash = hash;
+            this.n = n;
 
             hashSizeInBits = hash.SizeInBits;
             hashSizeInBytes = hash.SizeInBytes;
             subKeySizeInBytes = hashSizeInBits* hashSizeInBytes;
             keySizeInBytes = subKeySizeInBytes * 2;
+            composedKeySizeInBytes = keySizeInBytes * n;
         }
 
         public (byte[] SecretKey, byte[] PublicKey) GenerateKeys()
         {
-            var sk = RandomHelper.GenerateBytes(keySizeInBytes);
-            var pk = new byte[keySizeInBytes];
+            var sk = RandomHelper.GenerateBytes(composedKeySizeInBytes);
+            var pk = new byte[composedKeySizeInBytes];
 
-            for (var i = 0; i < keySizeInBytes; i += hashSizeInBytes)
+            for (var i = 0; i < composedKeySizeInBytes; i += hashSizeInBytes)
             {
                 hash.Compute(sk, i, hashSizeInBytes, pk, i);
             }
@@ -37,10 +43,12 @@ namespace NCrypto.Cryptography.Signatures
 
         public byte[] Sign(byte[] data, byte[] secretKey)
         {
+            var kSecretKey = secretKey.AsSpan(k * keySizeInBytes, keySizeInBytes);
+
             var m = hash.Compute(data, 0, data.Length);
-            var sk0 = secretKey.AsSpan(0, subKeySizeInBytes);
-            var sk1 = secretKey.AsSpan(subKeySizeInBytes, subKeySizeInBytes);
-            var signature = new byte[keySizeInBytes];
+            var sk0 = kSecretKey.Slice(0, subKeySizeInBytes);
+            var sk1 = kSecretKey.Slice(subKeySizeInBytes, subKeySizeInBytes);
+            var signature = new byte[keySizeInBytes + 1];
 
             for (var i = 0; i < hashSizeInBits; i++)
             {
@@ -50,14 +58,20 @@ namespace NCrypto.Cryptography.Signatures
                 sk.Slice(i * hashSizeInBytes, hashSizeInBytes).CopyTo(signature.AsSpan(i * hashSizeInBytes));
             }
 
+            signature[keySizeInBytes] = k;
+            k = Convert.ToByte((k + 1) % n);
+
             return signature;
         }
 
         public bool Verify(byte[] data, byte[] publicKey, byte[] signature)
         {
+            var k = signature[keySizeInBytes];
+            var kPublicKey = publicKey.AsSpan(k * keySizeInBytes, keySizeInBytes);
+
             var m = hash.Compute(data, 0, data.Length);
-            var pk0 = publicKey.AsSpan(0, subKeySizeInBytes);
-            var pk1 = publicKey.AsSpan(subKeySizeInBytes, subKeySizeInBytes);
+            var pk0 = kPublicKey.Slice(0, subKeySizeInBytes);
+            var pk1 = kPublicKey.Slice(subKeySizeInBytes, subKeySizeInBytes);
             Span<byte> h = stackalloc byte[hashSizeInBytes];
 
             for (var i = 0; i < hashSizeInBits; i++)
