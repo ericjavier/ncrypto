@@ -7,6 +7,7 @@ using NCrypto.Cryptography.Hashes;
 using NCrypto.Cryptography.Signatures;
 using System.Collections.Generic;
 using System;
+using NCrypto.Cryptography.Signatures.HashBased;
 
 namespace Cryptography.Test
 {
